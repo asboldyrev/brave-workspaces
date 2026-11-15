@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Brave Workspaces",
+  "version": "0.1.0",
+  "description": "Bookmark-backed workspaces for Brave (early preview).",
+  "permissions": [
+    "bookmarks",
+    "storage",
+    "tabs",
+    "sidePanel"
+  ],
+  "host_permissions": [],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Open Brave Workspaces"
+  }
+}
