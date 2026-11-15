@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brave Workspaces</title>
+  <link rel="stylesheet" href="sidepanel.css">
+  <script src="sidepanel.js" defer></script>
+</head>
+<body>
+  <header class="top"><div><b>Brave Workspaces</b><small>Предварительная версия 0.1</small></div><button id="refresh" title="Обновить">↻</button></header>
+  <section id="setup" hidden>
+    <h2>Выбор папки</h2>
+    <p>Выбери папку закладок, непосредственные дочерние папки которой станут группами. Вложенные папки внутри групп будут игнорироваться.</p>
+    <label for="root">Корневая папка</label>
+    <select id="root"></select>
+    <button id="save-root" class="primary">Использовать эту папку</button>
+  </section>
+  <main id="workspace" hidden>
+    <div class="toolbar"><span id="root-name"></span><button id="choose-root" title="Сменить папку">⚙</button></div>
+    <section class="home"><strong>⌂ Вкладки окна</strong><small>Управление домашними вкладками — следующий этап</small></section>
+    <section class="list-head"><strong>Общие группы</strong><button id="new-group">＋</button></section>
+    <div id="groups"></div>
+    <section id="contents" hidden><div class="list-head"><strong id="group-name"></strong><span id="group-count"></span></div><div id="items"></div></section>
+  </main>
+  <section id="create" hidden>
+    <div class="toolbar"><button id="back">← Назад</button></div>
+    <h2>Новая группа</h2>
+    <nav><button class="selected" data-mode="blank">Создать</button><button data-mode="import">Импорт</button></nav>
+    <div id="blank-form"><label for="new-name">Название группы</label><input id="new-name" placeholder="Например, Проекты"><button id="create-group" class="primary">Создать группу</button></div>
+    <div id="import-form" hidden>
+      <label for="yandex-link">Ссылка Яндекс Браузера (экспериментально)</label>
+      <input id="yandex-link" placeholder="https://browser.yandex.ru/tab-groupings-share/…">
+      <p>Прямое чтение ссылки пока не поддерживается: формат данных Яндекса не подтверждён. Вставь URL страниц, по одному на строку.</p>
+      <label for="import-name">Название импортируемой группы</label>
+      <input id="import-name" placeholder="Например, Импорт из Яндекса">
+      <label for="import-urls">Адреса сайтов</label>
+      <textarea id="import-urls" rows="7" placeholder="https://example.com&#10;https://github.com"></textarea>
+      <button id="import-group" class="primary">Импортировать URL</button>
+    </div>
+  </section>
+  <p role="status" id="status"></p>
+</body>
+</html>
