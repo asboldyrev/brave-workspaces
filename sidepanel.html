@@ -21,7 +21,17 @@
     <section class="home"><strong>⌂ Вкладки окна</strong><small>Управление домашними вкладками — следующий этап</small></section>
     <section class="list-head"><strong>Общие группы</strong><button id="new-group">＋</button></section>
     <div id="groups"></div>
-    <section id="contents" hidden><div class="list-head"><strong id="group-name"></strong><span id="group-count"></span></div><div id="items"></div></section>
+    <section id="contents" hidden>
+      <div class="list-head"><strong id="group-name"></strong><span id="group-count"></span></div>
+      <div id="items"></div>
+      <div class="add-links">
+        <strong>Добавить вкладку в группу</strong>
+        <button id="add-current" class="secondary wide">＋ Текущая вкладка</button>
+        <label for="add-url">Или адрес сайта</label>
+        <input id="add-url" type="url" placeholder="https://example.com">
+        <button id="add-url-button" class="secondary wide">＋ Добавить ссылку</button>
+      </div>
+    </section>
   </main>
   <section id="create" hidden>
     <div class="toolbar"><button id="back">← Назад</button></div>
@@ -31,12 +41,17 @@
     <div id="import-form" hidden>
       <label for="yandex-link">Ссылка Яндекс Браузера (экспериментально)</label>
       <input id="yandex-link" placeholder="https://browser.yandex.ru/tab-groupings-share/…">
-      <p>Прямое чтение ссылки пока не поддерживается: формат данных Яндекса не подтверждён. Вставь URL страниц, по одному на строку.</p>
+      <button id="fetch-yandex" class="secondary wide">Получить группу по ссылке</button>
+      <p id="import-hint">Получим название и вкладки из опубликованной страницы Яндекса. Перед импортом покажем предпросмотр. Если страница недоступна, можно вставить URL вручную.</p>
+      <div id="import-preview" hidden><strong>Предпросмотр</strong><div id="preview-items"></div></div>
+      <label for="import-html">Если автоматическая загрузка недоступна: HTML-код страницы (необязательно)</label>
+      <textarea id="import-html" rows="3" placeholder="Вставь исходный HTML страницы Яндекса"></textarea>
+      <button id="parse-html" class="secondary wide">Прочитать HTML</button>
       <label for="import-name">Название импортируемой группы</label>
       <input id="import-name" placeholder="Например, Импорт из Яндекса">
       <label for="import-urls">Адреса сайтов</label>
       <textarea id="import-urls" rows="7" placeholder="https://example.com&#10;https://github.com"></textarea>
-      <button id="import-group" class="primary">Импортировать URL</button>
+      <button id="import-group" class="primary">Создать группу из списка</button>
     </div>
   </section>
   <p role="status" id="status"></p>

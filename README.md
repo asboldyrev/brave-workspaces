@@ -10,18 +10,20 @@ An early **Manifest V3 / Brave side-panel** prototype for managing bookmark-back
 4. Pin the extension and click its icon to open the side panel.
 5. Pick a root bookmarks folder. **Only direct subfolders** are treated as groups; nested folders are ignored.
 
-## Implemented in 0.1.0
+## Implemented in 0.2.0
 
 - Choose and persist the root bookmark folder.
 - Show groups and the bookmarks directly inside each group, in order.
 - Create a group as a new bookmark folder.
-- Import a group from a pasted list of HTTP(S) URLs (one per line), under **New group → Import**.
+- Add the currently active page or a manually entered HTTP(S) URL to an existing group.
+- Import a Yandex shared group by URL from **New group → Import**, with a preview before saving. Falls back to pasting saved HTML or a list of URLs when the page cannot be fetched.
+- Font size raised to 16px, bigger buttons and inputs.
 - Open a bookmarked URL in a real browser tab.
 - Keep the bookmark URL and title updated for tabs opened *through this extension*.
 
 ## Intentionally NOT implemented yet
 
-- Import by a Yandex share link. The page format/endpoint is unverified. The link field is a placeholder, not a functional parser.
+- Import from Yandex HTML is implemented using the published group's `main h1.title` and `ul.tabs li a.link` markup. URL fetch may be blocked by Yandex or fail if its markup changes; paste HTML manually as fallback.
 - Native Yandex-style workspace switching or background preservation of live tabs.
 - Synchronizing *all* tabs, closing a tab => deleting its bookmark, cross-window replication, tab reordering, and Ctrl+Shift+T restoration.
 - Home workspace per window.
@@ -40,4 +42,5 @@ The main unresolved technical spike is safe retention of live tabs during worksp
 - `tabs`: open tabs and monitor navigation/title changes.
 - `storage`: remember settings and managed tab mappings.
 - `sidePanel`: render the UI.
+- Host permission limited to `https://browser.yandex.ru/*` to fetch user-provided Yandex group share pages.
 No host permissions, content scripts, remote code, or external dependencies.

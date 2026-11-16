@@ -81,6 +81,40 @@ async function render() {
     if(!nodes.length){const empty=document.createElement("div");empty.className="empty";empty.textContent="Пока нет вкладок";items.append(empty);}
   }
 }
+
+function isYandexShareLink(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" &&
+      url.hostname === "browser.yandex.ru" &&
+      /^\\/tab-groupings-share\\/[0-9a-f-]{36}\\/?$/i.test(url.pathname);
+  } catch { return false; }
+}
+function parseYandexHtml(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const title = doc.querySelector("main h1.title")?.textContent?.trim() ||
+    doc.querySelector("h1")?.textContent?.trim();
+  const entries = [...doc.querySelectorAll("ul.tabs li a.link[href]")].map(link => ({
+    url: validUrl(link.getAttribute("href") || ""),
+    title: link.querySelector("p.title")?.textContent?.trim() || ""
+  })).filter(item => item.url);
+  if (!title || !entries.length) throw new Error("Не удалось найти название или вкладки. Проверь, что это страница опубликованной группы Яндекс Браузера.");
+  if (entries.length > 500) throw new Error("Слишком много вкладок для одного импорта");
+  return { name: title, tabs: entries };
+}
+function showImportPreview(group) {
+  $("import-name").value = group.name;
+  $("import-urls").value = group.tabs.map(tab => tab.url).join("\\n");
+  const box = $("preview-items"); box.replaceChildren();
+  for (const tab of group.tabs) {
+    const row = document.createElement("div"); row.className = "preview-row";
+    const name = document.createElement("strong"); name.textContent = tab.title || new URL(tab.url).hostname;
+    const url = document.createElement("small"); url.textContent = tab.url;
+    row.append(name,url); box.append(row);
+  }
+  $("import-preview").hidden = false;
+  status("Найдено вкладок: "+group.tabs.length+". Проверь список и нажми «Создать группу из списка».");
+}
 function showCreate() {
   $("workspace").hidden=true; $("setup").hidden=true; $("create").hidden=false; status("");
 }
@@ -101,6 +135,49 @@ $("refresh").addEventListener("click",()=>render().catch(e=>status(e.message,tru
 $("choose-root").addEventListener("click",()=>showSetup().catch(e=>status(e.message,true)));
 $("save-root").addEventListener("click",async()=>{rootId=$("root").value;await chrome.storage.local.set({[ROOT_KEY]:rootId});selectedGroupId=null;await render();});
 $("new-group").addEventListener("click",showCreate);
+async function addBookmarkToGroup(url, title) {
+  if (!selectedGroupId) throw Error("Сначала выбери группу");
+  const normalized = validUrl(url);
+  if (!normalized) throw Error("Укажи корректный HTTP(S)-адрес");
+  await chrome.bookmarks.create({ parentId:selectedGroupId, url:normalized, title:title || new URL(normalized).hostname });
+  await render();
+  status("Ссылка добавлена");
+}
+$("add-url-button").addEventListener("click",async()=>{
+  try{ await addBookmarkToGroup($("add-url").value); $("add-url").value=""; }
+  catch(e){status(e.message,true);}
+});
+$("add-current").addEventListener("click",async()=>{
+  try{
+    const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true});
+    if(!tab || !validUrl(tab.url)) throw Error("Текущую страницу нельзя добавить: нужен сайт с HTTP(S)");
+    await addBookmarkToGroup(tab.url, tab.title || new URL(tab.url).hostname);
+  } catch(e){status(e.message,true);}
+});
+$("fetch-yandex").addEventListener("click",async()=>{
+  try{
+    const link=$("yandex-link").value.trim();
+    if(!isYandexShareLink(link)) throw Error("Вставь корректную ссылку на группу browser.yandex.ru");
+    status("Загрузка опубликованной группы…");
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(),12000);
+    let response;
+    try { response=await fetch(link,{credentials:"omit",signal:controller.signal}); }
+    finally {clearTimeout(timeout);}
+    if(!response.ok) throw Error("Яндекс вернул HTTP "+response.status);
+    const html=await response.text();
+    if(html.length>3000000) throw Error("Слишком большой ответ сервера");
+    showImportPreview(parseYandexHtml(html));
+  } catch(e) {status("Не удалось прочитать ссылку: "+e.message+". Можно вставить HTML страницы ниже.",true);}
+});
+$("parse-html").addEventListener("click",()=>{
+  try {
+    const html=$("import-html").value;
+    if(!html.trim()) throw Error("Вставь HTML-код страницы Яндекса");
+    if(html.length>3000000) throw Error("Слишком большой HTML");
+    showImportPreview(parseYandexHtml(html));
+  } catch(e){ status(e.message,true); }
+});
 $("back").addEventListener("click",()=>render().catch(e=>status(e.message,true)));
 $("create-group").addEventListener("click",()=>createGroup($("new-name").value).catch(e=>status(e.message,true)));
 $("import-group").addEventListener("click",async()=>{
@@ -110,7 +187,7 @@ $("import-group").addEventListener("click",async()=>{
     const urls=raw.map(validUrl);
     if(urls.some(x=>!x)) throw Error("В списке есть некорректные URL. Разрешены только HTTP(S)");
     await createGroup($("import-name").value,urls);
-    status("Импортировано вкладок: "+urls.length);
+    status("Импортировано вкладок: "+urls.length); $("import-preview").hidden=true;
   }catch(e){status(e.message,true);}
 });
 document.querySelectorAll("[data-mode]").forEach(button=>{
