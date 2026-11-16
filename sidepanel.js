@@ -3,6 +3,7 @@ const ROOT_KEY = "bw.rootFolderId";
 let rootId = null;
 let selectedGroupId = null;
 let folders = [];
+let importedPreview = null;
 
 function status(message, error = false) {
   $("status").textContent = message;
@@ -85,9 +86,11 @@ async function render() {
 function isYandexShareLink(value) {
   try {
     const url = new URL(value);
+    const parts = url.pathname.split("/").filter(Boolean);
     return url.protocol === "https:" &&
       url.hostname === "browser.yandex.ru" &&
-      /^\\/tab-groupings-share\\/[0-9a-f-]{36}\\/?$/i.test(url.pathname);
+      parts.length === 2 && parts[0] === "tab-groupings-share" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parts[1]);
   } catch { return false; }
 }
 function parseYandexHtml(html) {
@@ -103,8 +106,9 @@ function parseYandexHtml(html) {
   return { name: title, tabs: entries };
 }
 function showImportPreview(group) {
+  importedPreview = group;
   $("import-name").value = group.name;
-  $("import-urls").value = group.tabs.map(tab => tab.url).join("\\n");
+  $("import-urls").value = group.tabs.map(tab => tab.url).join("\n");
   const box = $("preview-items"); box.replaceChildren();
   for (const tab of group.tabs) {
     const row = document.createElement("div"); row.className = "preview-row";
@@ -116,6 +120,7 @@ function showImportPreview(group) {
   status("Найдено вкладок: "+group.tabs.length+". Проверь список и нажми «Создать группу из списка».");
 }
 function showCreate() {
+  importedPreview = null;
   $("workspace").hidden=true; $("setup").hidden=true; $("create").hidden=false; status("");
 }
 async function createGroup(name, urls=[]) {
@@ -124,7 +129,11 @@ async function createGroup(name, urls=[]) {
   if(!rootId) throw Error("Сначала выбери корневую папку");
   const folder=await chrome.bookmarks.create({parentId:rootId,title:name});
   try {
-    for (const url of urls) await chrome.bookmarks.create({parentId:folder.id,title:new URL(url).hostname,url});
+    for (const entry of urls) {
+      const url = typeof entry === "string" ? entry : entry.url;
+      const title = typeof entry === "string" ? new URL(url).hostname : entry.title || new URL(url).hostname;
+      await chrome.bookmarks.create({parentId:folder.id,title,url});
+    }
   } catch (error) {
     status("Группа создана, но часть URL не удалось импортировать: "+error.message,true);
   }
@@ -186,7 +195,9 @@ $("import-group").addEventListener("click",async()=>{
     if(!raw.length) throw Error("Вставь адреса страниц, по одному на строку");
     const urls=raw.map(validUrl);
     if(urls.some(x=>!x)) throw Error("В списке есть некорректные URL. Разрешены только HTTP(S)");
-    await createGroup($("import-name").value,urls);
+    const tabs = importedPreview && importedPreview.tabs.length === urls.length &&
+      importedPreview.tabs.every((item,i)=>item.url === urls[i]) ? importedPreview.tabs : urls;
+    await createGroup($("import-name").value,tabs);
     status("Импортировано вкладок: "+urls.length); $("import-preview").hidden=true;
   }catch(e){status(e.message,true);}
 });
